@@ -7,5 +7,15 @@
   * Trinket NFT
   * Gold NFT
 
-![Alt text](/Batch.jpeg)
+
+
+
+### Concurrency Options:
+
+![Alt text](/Batch.png)
+#### Batch
+* This design depends on some sort of off-chain checker to run the script to smelt the Trinket into Gold
+* * It also reduces the 
+
+#### Individual UTXO
 
