@@ -18,4 +18,4 @@
 * * It also reduces the 
 
 #### Individual UTXO
-
+![Alt text](/parallel-utxos.jpeg)
