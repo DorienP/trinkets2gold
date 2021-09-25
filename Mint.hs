@@ -32,43 +32,99 @@ import           Prelude                (IO, Show (..), String)
 import           Text.Printf            (printf)
 import           Wallet.Emulator.Wallet
 
-{-# INLINABLE mkPolicy #-}
-mkPolicy :: TokenName -> TxOutRef -> () -> ScriptContext -> Bool
-mkPolicy () _ = True
+{-# INLINABLE mkGoldPolicy #-}
+mkGoldPolicy :: TxOutRef -> () -> ScriptContext -> Bool
+mkGoldPolicy txORef () ctx = traceIfFalse "expected Gold token" goldIsMinted &&
+    traceIfFalse "TxOutRef not found" checkTxOutRef
 
-policy :: Scripts.MintingPolicy
-policy = mkMintingPolicyScript $$(PlutusTx.compile [|| Scripts.wrapMintingPolicy mkPolicy ||])
+    where
+        info :: TxInfo
+        info = txInfo ctx
 
-curSymbol :: CurrencySymbol
-curSymbol = scriptCurrencySymbol policy
+        goldIsMinted :: Bool
+        goldIsMinted = case Value.flattenValue (txInfoMint info) of 
+            [(_,tn',amt)] -> tn' == "Gold"
+            _ -> False 
+
+        checkTxOutRef :: Bool
+        checkTxOutRef = any (\TxInInfo ref _ -> ref == txORef) (txInfoInputs info) 
+
+goldPolicy :: TxOutRef -> Scripts.MintingPolicy
+goldPolicy txORef = mkMintingPolicyScript $$(PlutusTx.compile [|| Scripts.wrapMintingPolicy mkGoldPolicy ||])
+    `PlutusTx.applyCode` PlutusTx.liftCode txORef
+-- ------------------------------------------------------------------------------------- --
+
+{-# INLINABLE mkTrinketPolicy #-}
+mkTrinketPolicy :: TxOutRef -> () -> ScriptContext -> Bool
+mkTrinketPolicy txORef () ctx = traceIfFalse "expected Trinket token" trinketIsMinted &&
+    traceIfFalse "TxOutRef not found" checkTxOutRef
+
+    where
+        info :: TxInfo
+        info = txInfo ctx
+
+        trinketIsMinted :: Bool
+        trinketIsMinted = case Value.flattenValue (txInfoMint info) of 
+            [(_,tn',amt)] -> tn' == "Trinket"
+            _ -> False 
+
+        checkTxOutRef :: Bool
+        checkTxOutRef = any (\TxInInfo ref _ -> ref == txORef) (txInfoInputs info) 
+        
+trinketPolicy :: TxOutRef -> Scripts.MintingPolicy
+trinketPolicy txORef = mkMintingPolicyScript $$(PlutusTx.compile [|| Scripts.wrapMintingPolicy mkTrinketPolicy ||]) 
+    `PlutusTx.applyCode` PlutusTx.liftCode txORef 
+
+-- ------------------------------------------------------------------------------------- --
+
+goldCurSymbol :: TxOutRef -> CurrencySymbol
+goldCurSymbol txORef = scriptCurrencySymbol $ goldPolicy txORef
+
+trinketCurSymbol :: TxOutRef -> CurrencySymbol
+trinketCurSymbol txORef = scriptCurrencySymbol $ trinketPolicy txORef 
 
 data MintParams = MintParams
     { mpTokenName :: !TokenName
     , mpAmount    :: !Integer
+    , symbolFunc :: TxOutRef -> CurrencySymbol
     } deriving (Generic, ToJSON, FromJSON, ToSchema)
-
-type FreeSchema = Endpoint "mint" MintParams
 
 goldParams :: Int -> MintParams
 goldParams val = MintParams
     { mpTokenName = "Gold"
     , mpAmount = val
-     }
+    , symbolFunc = goldCurSymbol
+    }
 
+trinketParams :: Int -> MintParams
+trinketParams val = MintParams
+    { mpTokenName = "Trinket"
+    , mpAmount = val
+    , symbolFunc = trinketCurSymbol
+    }
+
+type FreeSchema = Endpoint "mint" MintParams
 
 mint :: MintParams -> Contract w FreeSchema Text ()
 mint mp = do
-    let val     = Value.singleton curSymbol (mpTokenName mp) (mpAmount mp)
-        lookups = Constraints.mintingPolicy policy
-        tx      = Constraints.mustMintValue val
-    ledgerTx <- submitTxConstraintsWith @Void lookups tx
-    void $ awaitTxConfirmed $ txId ledgerTx
-    Contract.logInfo @String $ printf "forged %s" (show val)
+    pk    <- Contract.ownPubKey
+    utxos <- utxoAt (pubKeyAddress pk)
+    case Map.keys utxos of 
+        []      -> Contract.logError @String "no utxo found"
+        txORef : _ -> do
+            let val     = Value.singleton (symbolFunc txORef) (mpTokenName mp) (mpAmount mp)
+                lookups = Constraints.mintingPolicy policy
+                tx      = Constraints.mustMintValue val
+            ledgerTx <- submitTxConstraintsWith @Void lookups tx
+            void $ awaitTxConfirmed $ txId ledgerTx
+            Contract.logInfo @String $ printf "forged %s" (show val)
 
 endpoints :: Contract () FreeSchema Text ()
 endpoints = mint' >> endpoints
   where
     mint' = endpoint @"mint" >>= mint
+
+
 
 mkSchemaDefinitions ''FreeSchema
 
