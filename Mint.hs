@@ -103,9 +103,9 @@ trinketParams val = MintParams
     , symbolFunc = trinketCurSymbol
     }
 
-type FreeSchema = Endpoint "mint" MintParams
+type MintSchema = Endpoint "mint" MintParams
 
-mint :: MintParams -> Contract w FreeSchema Text ()
+mint :: MintParams -> Contract w MintSchema Text ()
 mint mp = do
     pk    <- Contract.ownPubKey
     utxos <- utxoAt (pubKeyAddress pk)
@@ -113,19 +113,30 @@ mint mp = do
         []      -> Contract.logError @String "no utxo found"
         txORef : _ -> do
             let val     = Value.singleton (symbolFunc txORef) (mpTokenName mp) (mpAmount mp)
-                lookups = Constraints.mintingPolicy policy
+                lookups = Constraints.mintingPolicy (goldPolicy txORef)
+                    <> Constraints.mintingPolicy (trinketPolicy txORef)
+                    <> Constraints.unspentOutputs utxos
                 tx      = Constraints.mustMintValue val
+                    <> Constraints.mustSpendPubKeyOutput txORef
             ledgerTx <- submitTxConstraintsWith @Void lookups tx
             void $ awaitTxConfirmed $ txId ledgerTx
             Contract.logInfo @String $ printf "forged %s" (show val)
 
-endpoints :: Contract () FreeSchema Text ()
+endpoints :: Contract () MintSchema Text ()
 endpoints = mint' >> endpoints
   where
     mint' = endpoint @"mint" >>= mint
 
-
-
-mkSchemaDefinitions ''FreeSchema
+mkSchemaDefinitions ''MintSchema
 
 mkKnownCurrencies []
+
+test :: IO ()
+test = runEmulatorTraceIO $ do
+    let tParams = trinketParams 1000
+    let gParams = goldParams 1000
+    h1 <- activateContractWallet (Wallet 1) endpoints
+    h2 <- activateContractWallet (Wallet 2) endpoints
+    callEndpoint @"mint" h1 tParams
+    callEndpoint @"mint" h2 gParams
+    void $ Emulator.waitNSlots 1
