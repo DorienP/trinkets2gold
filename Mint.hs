@@ -32,6 +32,18 @@ import           Prelude                (IO, Show (..), String)
 import           Text.Printf            (printf)
 import           Wallet.Emulator.Wallet
 
+trinketName :: TokenName
+trinketName = "Trinket"
+
+goldName :: TokenName
+goldName :: "Gold"
+
+trinketAC :: AssetClass
+trinketAC = AssetClass(trinketCurSymbol, trinketName)
+
+goldAC :: TxOutRef -> AssetClass
+goldAC ref = AssetClass(goldCurSymbol ref, goldName)
+
 {-# INLINABLE mkGoldPolicy #-}
 mkGoldPolicy :: TxOutRef -> () -> ScriptContext -> Bool
 mkGoldPolicy txORef () ctx = traceIfFalse "expected Gold token" goldIsMinted &&
@@ -42,12 +54,12 @@ mkGoldPolicy txORef () ctx = traceIfFalse "expected Gold token" goldIsMinted &&
         info = txInfo ctx
 
         goldIsMinted :: Bool
-        goldIsMinted = case Value.flattenValue (txInfoMint info) of 
-            [(_,tn',amt)] -> tn' == "Gold"
-            _ -> False 
+        goldIsMinted = case Value.flattenValue (txInfoMint info) of
+            [(_,tn',amt)] -> tn' == goldName
+            _ -> False
 
         checkTxOutRef :: Bool
-        checkTxOutRef = any (\TxInInfo ref _ -> ref == txORef) (txInfoInputs info) 
+        checkTxOutRef = any (\TxInInfo ref _ -> ref == txORef) (txInfoInputs info)
 
 goldPolicy :: TxOutRef -> Scripts.MintingPolicy
 goldPolicy txORef = mkMintingPolicyScript $$(PlutusTx.compile [|| Scripts.wrapMintingPolicy mkGoldPolicy ||])
@@ -55,33 +67,30 @@ goldPolicy txORef = mkMintingPolicyScript $$(PlutusTx.compile [|| Scripts.wrapMi
 -- ------------------------------------------------------------------------------------- --
 
 {-# INLINABLE mkTrinketPolicy #-}
-mkTrinketPolicy :: TxOutRef -> () -> ScriptContext -> Bool
-mkTrinketPolicy txORef () ctx = traceIfFalse "expected Trinket token" trinketIsMinted &&
-    traceIfFalse "TxOutRef not found" checkTxOutRef
+mkTrinketPolicy :: () -> ScriptContext -> Bool
+mkTrinketPolicy () ctx = traceIfFalse "expected Trinket token" trinketIsMinted
 
     where
         info :: TxInfo
         info = txInfo ctx
 
         trinketIsMinted :: Bool
-        trinketIsMinted = case Value.flattenValue (txInfoMint info) of 
-            [(_,tn',amt)] -> tn' == "Trinket"
-            _ -> False 
+        trinketIsMinted = case Value.flattenValue (txInfoMint info) of
+            [(_,tn',amt)] -> tn' == trinketName
+            _ -> False
 
-        checkTxOutRef :: Bool
-        checkTxOutRef = any (\TxInInfo ref _ -> ref == txORef) (txInfoInputs info) 
-        
-trinketPolicy :: TxOutRef -> Scripts.MintingPolicy
-trinketPolicy txORef = mkMintingPolicyScript $$(PlutusTx.compile [|| Scripts.wrapMintingPolicy mkTrinketPolicy ||]) 
-    `PlutusTx.applyCode` PlutusTx.liftCode txORef 
+
+trinketPolicy :: Scripts.MintingPolicy
+trinketPolicy = mkMintingPolicyScript $$(PlutusTx.compile [|| Scripts.wrapMintingPolicy mkTrinketPolicy ||])
+
 
 -- ------------------------------------------------------------------------------------- --
 
 goldCurSymbol :: TxOutRef -> CurrencySymbol
 goldCurSymbol txORef = scriptCurrencySymbol $ goldPolicy txORef
 
-trinketCurSymbol :: TxOutRef -> CurrencySymbol
-trinketCurSymbol txORef = scriptCurrencySymbol $ trinketPolicy txORef 
+trinketCurSymbol :: CurrencySymbol
+trinketCurSymbol = scriptCurrencySymbol trinketPolicy
 
 data MintParams = MintParams
     { mpTokenName :: !TokenName
@@ -109,12 +118,12 @@ mint :: MintParams -> Contract w MintSchema Text ()
 mint mp = do
     pk    <- Contract.ownPubKey
     utxos <- utxoAt (pubKeyAddress pk)
-    case Map.keys utxos of 
+    case Map.keys utxos of
         []      -> Contract.logError @String "no utxo found"
         txORef : _ -> do
             let val     = Value.singleton (symbolFunc txORef) (mpTokenName mp) (mpAmount mp)
                 lookups = Constraints.mintingPolicy (goldPolicy txORef)
-                    <> Constraints.mintingPolicy (trinketPolicy txORef)
+                    <> Constraints.mintingPolicy trinketPolicy
                     <> Constraints.unspentOutputs utxos
                 tx      = Constraints.mustMintValue val
                     <> Constraints.mustSpendPubKeyOutput txORef
@@ -130,13 +139,3 @@ endpoints = mint' >> endpoints
 mkSchemaDefinitions ''MintSchema
 
 mkKnownCurrencies []
-
-test :: IO ()
-test = runEmulatorTraceIO $ do
-    let tParams = trinketParams 1000
-    let gParams = goldParams 1000
-    h1 <- activateContractWallet (Wallet 1) endpoints
-    h2 <- activateContractWallet (Wallet 2) endpoints
-    callEndpoint @"mint" h1 tParams
-    callEndpoint @"mint" h2 gParams
-    void $ Emulator.waitNSlots 1
