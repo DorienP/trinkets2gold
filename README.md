@@ -19,5 +19,5 @@
 
 #### Parallel UTXO
 ![Alt text](/parallel-utxos.jpg)
-* This design is a 1:1 swap from Trinket into Gold 
+
 
