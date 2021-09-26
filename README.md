@@ -46,3 +46,10 @@ Possible challenges of this approach include:
    1. A transaction would have at least one Gold UTXO and Trinket UTXO as inputs for every exchange
    2. We were informed by a mentor that you also have to keep a minimum amount of ADA along with each NFT's UTXO.
 3. If taking the cash register approach, there may be a desire to optimize the exchange by finding the largest amount Gold in a single UTXO that satisfies the requested amount.
+
+
+
+## Project Structure
+`Mint.hs` - Contains the minting policies and endpoints for Trinkets and Gold.
+`Smelter.hs` - Contains the Trinket-to-Gold swap contract and endpoints.
+`Test.hs` - Contains code to test the minting and swap functionality with the emulator.
