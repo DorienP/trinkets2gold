@@ -2,15 +2,13 @@
 
 ## Developed by Dorien, Habib, Kyle
 
-## The theory
+## The planning
 * Creating two types of NFTs 
   * Trinket NFT
   * Gold NFT
 
-
-
-
-### Concurrency Options:
+* Designing a way to demonstrate concurrency
+## Concurrency Choices:
 #### Batch UTXO
 ![Alt text](/Batch.png)
 
