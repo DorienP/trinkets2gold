@@ -95,21 +95,18 @@ trinketCurSymbol = scriptCurrencySymbol trinketPolicy
 data MintParams = MintParams
     { mpTokenName :: !TokenName
     , mpAmount    :: !Integer
-    , symbolFunc :: TxOutRef -> CurrencySymbol
     } deriving (Generic, ToJSON, FromJSON, ToSchema)
 
 goldParams :: Int -> MintParams
 goldParams val = MintParams
     { mpTokenName = "Gold"
     , mpAmount = val
-    , symbolFunc = goldCurSymbol
     }
 
 trinketParams :: Int -> MintParams
 trinketParams val = MintParams
     { mpTokenName = "Trinket"
     , mpAmount = val
-    , symbolFunc = trinketCurSymbol
     }
 
 type MintSchema = Endpoint "mint" MintParams

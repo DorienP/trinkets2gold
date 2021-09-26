@@ -11,7 +11,7 @@
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeOperators         #-}
 
-module Trinkets2Gold.Smelter(
+module Trinkets2Gold.Trade(
   trinketAC,
 
 ) where
@@ -41,6 +41,8 @@ data PlayerDatum = PlayerDatum
     playerHash  :: PubKeyHash
   } deriving Show
 
+PlutusTx.makeLift ''PlayerDatum
+PlutusTx.unstableMakeIsData ''PlayerDatum
 
 {-# INLINABLE mkSwapValidator #-}
 mkSwapValidator :: AssetClass -> AssetClass -> PlayerDatum -> () -> ScriptContext -> Bool
