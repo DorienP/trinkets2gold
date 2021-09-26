@@ -33,7 +33,7 @@ Ultimately, we decided to attempt this approach due to the limited amount of tim
 ### Pre-Grouped/Cash Register UTXOs
 ![Alt text](/Parallel.PNG)
 
-The idea is to preemptively mint all the Tokens and then to break up the Gold NFTs into separate UTXOs.
+The idea is to preemptively mint all the Tokens and then to break up the Gold Tokens into separate UTXOs.
 
 In theory, you could separate each individual Token into it's own UTXO, which could potentially allow the maximum amount of parallelism and guarantee that the exchange would occur within the timeframe of a single block.
 
