@@ -9,12 +9,12 @@ You are writing a game where users trade the trinkets they gather for gold token
 * Write or audit implementations
 
 ## The Planning/Setup
-We started by minting two types of NFTs:
+We started by minting two types of Tokens:
 
 1. Trinkets
 2. Gold
 
-Our goal is to preemptively make these NFTs available, with the assumption that "the game" would properly distribute the Trinkets to the players.
+Our goal is to preemptively make these Tokens available, with the assumption that "the game" would properly distribute the Trinkets to the players.
 
 
 ## Concurrency Options:
@@ -33,9 +33,9 @@ Ultimately, we decided to attempt this approach due to the limited amount of tim
 ### Pre-Grouped/Cash Register UTXOs
 ![Alt text](/Parallel.PNG)
 
-The idea is to preemptively mint all the NFTs and then to break up the Gold NFTs into separate UTXOs.
+The idea is to preemptively mint all the Tokens and then to break up the Gold NFTs into separate UTXOs.
 
-In theory, you could separate each individual NFT into it's own UTXO, which could potentially allow the maximum amount of parallelism and guarantee that the exchange would occur within the timeframe of a single block.
+In theory, you could separate each individual Token into it's own UTXO, which could potentially allow the maximum amount of parallelism and guarantee that the exchange would occur within the timeframe of a single block.
 
 There is also the possibility of pre-portioning the groups similarly to how a cash register might work (for example: 10 groups of 100 Gold, 10 groups of 50 Gold, 10 groups of 10 Gold, 10 groups of 1 Gold)
 
