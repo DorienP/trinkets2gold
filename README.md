@@ -46,3 +46,18 @@ Possible challenges of this approach include:
    1. A transaction would have at least one Gold UTXO and Trinket UTXO as inputs for every exchange
    2. We were informed by a mentor that you also have to keep a minimum amount of ADA along with each Token's UTXO.
 3. If taking the cash register approach, there may be a desire to optimize the exchange by finding the largest amount Gold in a single UTXO that satisfies the requested amount.
+
+
+###  Improvements and To-Dos
+
+We intended to do the following, but weren't able to due to the time constraints:
+
+1. Define the actual swap functionality.
+2. Integrate the front-end fully.
+3. Develop a hybrid approach of the two methodologies discussed above.
+
+Things that needes improvement within our project include:
+
+1. Refining our code to be robust in the face of real-world scenarios, like there being a finite amount to mint of currencies, users erroneously sending in multiple transactions or double-spending, and assuming users would have some of each currency instead of the either-or scenario we went for.
+2. Enhancing the frontend to allow for smoother operation of the game.
+3. Moving away from the fixed ratio of trinkets to gold to allow for an algorithm-based fine-tuning of the ratio.
