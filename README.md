@@ -2,6 +2,8 @@
 
 ## Developed by Dorien, Habib, Kyle
 
+*cabal build may have taken beyond deadline to submit so some default imports may have compilation error.
+
 ## The Challenge: Concurrency
 You are writing a game where users trade the trinkets they gather for gold tokens. There are hundreds of users performing this simultaneously. Write a plutus program to process as many script inputs as possible in a particular block.
 * Concurrency concept
