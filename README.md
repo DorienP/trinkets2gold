@@ -16,6 +16,6 @@
 * * It reduces cost with less UTXOs as well as data
 
 #### Parallel UTXO
-![Alt text](/parallel-utxos.jpg)
+![Alt text](/Parallel.PNG)
 
 
